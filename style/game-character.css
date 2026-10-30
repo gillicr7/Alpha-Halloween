@@ -13,7 +13,7 @@
   width: auto;
 }
 
-.game-character-container .knive {
+.game-character-container .knife {
   background-image: url("./../src/assets/images/items/knife-with-blood.webp");
   background-position: center;
   background-size: contain;
