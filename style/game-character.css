@@ -1,7 +1,18 @@
 .game-character-container {
   width: 600px;
   height: 600px;
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%) scale(var(--character-scale, 1));
+  transform-origin: center;
+  pointer-events: none;
+}
+
+#knives {
+  position: absolute;
+  inset: 0;
 }
 
 .game-character-container .game-character {
@@ -20,30 +31,19 @@
   background-repeat: no-repeat;
   position: absolute;
   pointer-events: none;
+  width: 80px;
+  height: 80px;
+  transform: rotate3d(10, 1, 1, 313deg);
 }
 
 .game-character-container .knife.left-foot {
-  height: 80px;
-  width: 80px;
   bottom: 56px;
   left: 174px;
-  transform: rotate3d(10, 1, 1, 313deg);
 }
 .game-character-container .knife.right-hand {
-  height: 80px;
-  width: 80px;
   top: 156px;
   left: 374px;
-  transform: rotate3d(10, 1, 1, 313deg);
 }
-.game-character-container .knife.left-foot {
-  height: 80px;
-  width: 80px;
-  bottom: 56px;
-  left: 174px;
-  transform: rotate3d(10, 1, 1, 313deg);
-}
-
 .knife .knife-hitbox {
   position: absolute;
   inset: 0;
@@ -53,7 +53,7 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: rgb(255 0 0 / 30%);
+  background: transparent;
   pointer-events: auto;
   /* Contour of knife-with-blood.webp, centered with contain in a square. */
   clip-path: polygon(
@@ -77,4 +77,37 @@
     50.3% 33.2%, 56.5% 33.2%
   );
   transform-origin: 42% 62.4%;
+  transform: scale(var(--knife-hitbox-scale, 1));
+}
+
+.knife .knife-hitbox:disabled {
+  pointer-events: none;
+}
+
+.show-hitboxes .knife .knife-hitbox {
+  background: rgb(255 0 0 / 40%);
+}
+
+.knife .knife-hitbox:focus-visible {
+  background: rgb(255 190 60 / 50%);
+}
+
+.game-character-container .knife.left-hand {
+  left: 132px;
+  top: 254px;
+}
+
+.game-character-container .knife.chest {
+  left: 268px;
+  top: 226px;
+}
+
+.game-character-container .knife.right-leg {
+  left: 322px;
+  top: 435px;
+}
+
+.game-character-container .knife.left-shoulder {
+  left: 192px;
+  top: 142px;
 }

@@ -1,25 +1,31 @@
-
 const answerButton = document.getElementById("answerButton");
 const message = document.getElementById("message");
 const phone = document.querySelector(".phone");
+let callAnswered = false;
 
-answerButton.addEventListener("click", AnswerCall);
+answerButton.addEventListener("click", () => {
+    if (callAnswered) StartGame();
+    else AnswerCall();
+});
 
 function AnswerCall() {
-    message.textContent =
-        "GHOSTFACE: Hello. Do you like scary code?";
-
+    callAnswered = true;
+    message.textContent = "GHOSTFACE: Hello. Do you like scary code?";
     phone.textContent = "💀";
     answerButton.textContent = "START GAME";
-
-    answerButton.removeEventListener("click", AnswerCall);
-    answerButton.addEventListener("click", StartGame);
+    initializeAudio();
 }
 
 function StartGame() {
-    message.textContent = "Your nightmare begins...";
-    answerButton.style.display = "none";
-    playSound("heartbeat").catch(error => {
-        soundStatus.textContent = `Could not play heartbeat: ${error.message}`;
-    });
+    initializeAudio();
+    startHorrorCraft();
+}
+
+function resetStartMenu() {
+    callAnswered = false;
+    message.textContent = "INCOMING CALL...";
+    phone.textContent = "☎";
+    answerButton.textContent = "ANSWER CALL";
+    document.getElementById("soundStatus").textContent = "";
+    answerButton.focus();
 }
