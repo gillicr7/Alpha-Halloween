@@ -1,0 +1,308 @@
+Index: index.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>SCREAM.exe</title>\n    <link rel=\"stylesheet\" href=\"style.css\">\n\n    <script src=\"js/sound.js\" defer></script>\n    <script src=\"js/script.js\" defer></script>\n</head>\n\n<body>\n<main class=\"game\">\n    <h1>SCREAM.exe</h1>\n    <p id=\"message\">INCOMING CALL...</p>\n    <div class=\"phone\">☎</div>\n\n    <button id=\"answerButton\">ANSWER CALL</button>\n\n    <button id=\"testSoundButton\" type=\"button\">\n        TEST SOUND \uD83D\uDD0A\n    </button>\n    <p id=\"soundStatus\" role=\"status\" aria-live=\"polite\"></p>\n</main>\n\n    <script src=\"js/shooting.js\"></script>\n    <button onclick=\"StartShootingGame()\">TEST SHOOTING GAME</button>\n\n</body>\n</html>\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/index.html b/index.html
+--- a/index.html	(revision 9f36178968c72550b2a1ba9320c3d28e22a4f92c)
++++ b/index.html	(date 1793368215678)
+@@ -8,6 +8,7 @@
+     <link rel="stylesheet" href="style.css">
+ 
+     <script src="js/sound.js" defer></script>
++    <script src="js/shooting.js" defer></script>
+     <script src="js/script.js" defer></script>
+ </head>
+ 
+@@ -18,15 +19,10 @@
+     <div class="phone">☎</div>
+ 
+     <button id="answerButton">ANSWER CALL</button>
++    <button id="enableRingingButton" type="button" hidden>ENABLE RINGING 🔊</button>
+ 
+-    <button id="testSoundButton" type="button">
+-        TEST SOUND 🔊
+-    </button>
+     <p id="soundStatus" role="status" aria-live="polite"></p>
+ </main>
+ 
+-    <script src="js/shooting.js"></script>
+-    <button onclick="StartShootingGame()">TEST SHOOTING GAME</button>
+-
+ </body>
+ </html>
+Index: js/shooting.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Monster shooting mini-game. Call StartShootingGame() from another game when needed.\nlet shootingScore = 0;\nlet shootingSeconds = 60;\nlet shootingActive = false;\nlet scareActive = false;\nlet shotsUntilScare = 0;\nlet scareClicks = 15;\nlet shootingClock = null;\nlet shootingSpawner = null;\nlet popupsActive = false;\n\nconst shootingImages = [\n    'src/assets/images/monster1.jpg',\n    'src/assets/images/monster2.jpg',\n    'src/assets/images/monster3.jpg'\n];\n\nfunction RandomScareThreshold() {\n    return Math.floor(Math.random() * 8) + 5; // 5 to 12 hits\n}\n\nfunction StartShootingGame() {\n    if (shootingActive) return;\n    shootingScore = 0;\n    shootingSeconds = 15;\n    shootingActive = true;\n    scareActive = false;\n    shotsUntilScare = RandomScareThreshold();\n\n    const overlay = document.createElement('section');\n    overlay.id = 'shootingOverlay';\n    overlay.innerHTML = `\n        <header class=\"shooting-header\">\n            <h2>MONSTER SHOOTER</h2>\n            <span>TIME: <strong id=\"shootingTime\">60</strong>s</span>\n            <span>KILLS: <strong id=\"shootingScore\">0</strong></span>\n            <button id=\"shootingExit\" type=\"button\">EXIT</button>\n        </header>\n        <div id=\"shootingArena\" aria-label=\"Shoot the monsters\"></div>\n        <div id=\"shootingScare\" class=\"shooting-hidden\" role=\"button\" tabindex=\"0\" aria-label=\"Click 15 times to escape\">\n            <img src=\"src/assets/images/monster3.jpg\" alt=\"Scary monster\">\n            <div class=\"scare-label\">CLICK TO SURVIVE! <span id=\"scareRemaining\">15</span></div>\n        </div>\n        <div id=\"shootingResult\" class=\"shooting-hidden\"></div>\n    `;\n    document.body.appendChild(overlay);\n    document.getElementById('shootingExit').addEventListener('click', EndShootingGame);\n    document.getElementById('shootingScare').addEventListener('click', HandleScareClick);\n    document.getElementById('shootingScare').addEventListener('keydown', event => {\n        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); HandleScareClick(); }\n    });\n\n    SpawnShootingMonster();\n    shootingSpawner = setInterval(SpawnShootingMonster, 800);\n    shootingClock = setInterval(() => {\n        if (!shootingActive || scareActive) return;\n        shootingSeconds--;\n        document.getElementById('shootingTime').textContent = shootingSeconds;\n        if (shootingSeconds <= 0) EndShootingGame();\n    }, 1000);\n}\n\nfunction SpawnShootingMonster() {\n    if (!shootingActive || scareActive) return;\n    const arena = document.getElementById('shootingArena');\n    if (!arena) return;\n    const monster = document.createElement('img');\n    monster.className = 'shooting-monster';\n    monster.src = shootingImages[Math.floor(Math.random() * shootingImages.length)];\n    monster.alt = 'Monster target';\n    const size = Math.min(110, Math.max(65, arena.clientWidth * 0.18));\n    monster.style.width = size + 'px';\n    monster.style.height = size + 'px';\n    monster.style.left = Math.random() * Math.max(0, arena.clientWidth - size) + 'px';\n    monster.style.top = Math.random() * Math.max(0, arena.clientHeight - size) + 'px';\n    monster.addEventListener('click', () => {\n        if (!shootingActive || scareActive) return;\n        monster.remove();\n        shootingScore++;\n        if (shootingScore >= 10) {\n            EndShootingGame(true);\n            return;\n        }\n        document.getElementById('shootingScore').textContent = shootingScore;\n        shotsUntilScare--;\n        if (shotsUntilScare <= 0) StartShootingScare();\n    });\n    arena.appendChild(monster);\n    setTimeout(() => monster.remove(), 2000);\n}\n\nfunction StartShootingScare() {\n    scareActive = true;\n    scareClicks = 15;\n    document.getElementById('scareRemaining').textContent = scareClicks;\n    document.getElementById('shootingArena').replaceChildren();\n    document.getElementById('shootingScare').classList.remove('shooting-hidden');\n}\n\nfunction HandleScareClick() {\n    if (!shootingActive || !scareActive) return;\n    scareClicks--;\n    document.getElementById('scareRemaining').textContent = scareClicks;\n    if (scareClicks <= 0) {\n        scareActive = false;\n        shotsUntilScare = RandomScareThreshold();\n        document.getElementById('shootingScare').classList.add('shooting-hidden');\n    }\n}\n\nfunction EndShootingGame(won) {\n    if (!shootingActive) return;\n\n    shootingActive = false;\n    scareActive = false;\n\n    clearInterval(shootingClock);\n    clearInterval(shootingSpawner);\n\n    document.getElementById('shootingOverlay')?.remove();\n\n    if (won) {\n        alert(\"YOU SURVIVED! 10 MONSTERS KILLED!\");\n        popupsActive = true;\n        ShowFakePopup();\n        // Tell the other games that the player won\n        document.dispatchEvent(new CustomEvent('shootingGameEnded', {\n            detail: {\n                score: shootingScore,\n                won: true\n            }\n        }));\n    }\n    else {\n        alert(\"TIME'S UP! YOU FAILED!\");\n        popupsActive = true;\n        ShowFakePopup();\n\n        // Tell the other games that the player lost\n        document.dispatchEvent(new CustomEvent('shootingGameEnded', {\n            detail: {\n                score: shootingScore,\n                won: false\n            }\n        }));\n    }\n}\n\n\nlet popupCount = 0;\n\nconst fakeErrors = [\n    \"Critical system error detected.\",\n    \"Unknown process is running.\",\n    \"Your computer is acting suspiciously.\",\n    \"Error 0x666: Something went wrong.\",\n    \"Failed to close this window.\",\n    \"WHY ARE YOU STILL CLICKING?\",\n    \"STOP CLICKING THE X.\",\n    \"YOU CANNOT ESCAPE.\"\n];\n\nfunction ShowFakePopup() {\n    if (!popupsActive) return;\n    popupCount++;\n\n    const popup = document.createElement(\"div\");\n    popup.className = \"fake-popup\";\n\n    const randomError = fakeErrors[\n        Math.floor(Math.random() * fakeErrors.length)\n    ];\n\n    popup.innerHTML = `\n        <div class=\"fake-popup-header\">\n            <span>System Error</span>\n            <button class=\"fake-popup-close\">✕</button>\n        </div>\n\n        <div class=\"fake-popup-content\">\n            <h3>⚠\uFE0F Windows Security</h3>\n            <p>${randomError}</p>\n            <p>Error count: ${popupCount}</p>\n        </div>\n    `;\n\n    // Random position on screen\n    popup.style.left =\n        Math.random() * Math.max(0, window.innerWidth - 350) + \"px\";\n\n    popup.style.top =\n        Math.random() * Math.max(0, window.innerHeight - 180) + \"px\";\n\n    document.body.appendChild(popup);\n\n    // Closing one popup creates two more\n    popup.querySelector(\".fake-popup-close\")\n        .addEventListener(\"click\", function () {\n            popup.remove();\n\n            ShowFakePopup();\n            ShowFakePopup();\n        });\n}\n\nlet typedKeys = \"\";\n\ndocument.addEventListener(\"keydown\", function (event) {\n    // Save the keys the player types\n    typedKeys += event.key.toLowerCase();\n\n    // Keep only the last 4 characters\n    typedKeys = typedKeys.slice(-4);\n\n    // Check if the player typed STOP\n    if (typedKeys === \"stop\") {\n        // Remove all fake popups\n        document.querySelectorAll(\".fake-popup\").forEach(popup => {\n            popup.remove();\n        });\n\n        // Reset the typed keys\n        typedKeys = \"\";\n\n        // Stop new popups from appearing\n        popupsActive = false;\n    }\n});
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/js/shooting.js b/js/shooting.js
+--- a/js/shooting.js	(revision 9f36178968c72550b2a1ba9320c3d28e22a4f92c)
++++ b/js/shooting.js	(date 1793367871112)
+@@ -21,6 +21,9 @@
+ 
+ function StartShootingGame() {
+     if (shootingActive) return;
++    stopAllSounds();
++    updateHeartbeat(100);
++    playGameSound('heartbeat');
+     shootingScore = 0;
+     shootingSeconds = 15;
+     shootingActive = true;
+@@ -32,7 +35,7 @@
+     overlay.innerHTML = `
+         <header class="shooting-header">
+             <h2>MONSTER SHOOTER</h2>
+-            <span>TIME: <strong id="shootingTime">60</strong>s</span>
++            <span>TIME: <strong id="shootingTime">${shootingSeconds}</strong>s</span>
+             <span>KILLS: <strong id="shootingScore">0</strong></span>
+             <button id="shootingExit" type="button">EXIT</button>
+         </header>
+@@ -44,7 +47,10 @@
+         <div id="shootingResult" class="shooting-hidden"></div>
+     `;
+     document.body.appendChild(overlay);
+-    document.getElementById('shootingExit').addEventListener('click', EndShootingGame);
++    document.getElementById('shootingArena').addEventListener('click', () => {
++        if (shootingActive && !scareActive) playGameSound('gunshot');
++    }, { capture: true });
++    document.getElementById('shootingExit').addEventListener('click', () => EndShootingGame(false));
+     document.getElementById('shootingScare').addEventListener('click', HandleScareClick);
+     document.getElementById('shootingScare').addEventListener('keydown', event => {
+         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); HandleScareClick(); }
+@@ -55,6 +61,7 @@
+     shootingClock = setInterval(() => {
+         if (!shootingActive || scareActive) return;
+         shootingSeconds--;
++        updateHeartbeat(shootingSeconds / 15 * 100);
+         document.getElementById('shootingTime').textContent = shootingSeconds;
+         if (shootingSeconds <= 0) EndShootingGame();
+     }, 1000);
+@@ -91,6 +98,8 @@
+ 
+ function StartShootingScare() {
+     scareActive = true;
++    updateHeartbeat(0);
++    playGameSound('screaming');
+     scareClicks = 15;
+     document.getElementById('scareRemaining').textContent = scareClicks;
+     document.getElementById('shootingArena').replaceChildren();
+@@ -99,10 +108,13 @@
+ 
+ function HandleScareClick() {
+     if (!shootingActive || !scareActive) return;
++    playGameSound('knife');
+     scareClicks--;
+     document.getElementById('scareRemaining').textContent = scareClicks;
+     if (scareClicks <= 0) {
+         scareActive = false;
++        stopSound('screaming');
++        updateHeartbeat(shootingSeconds / 15 * 100);
+         shotsUntilScare = RandomScareThreshold();
+         document.getElementById('shootingScare').classList.add('shooting-hidden');
+     }
+@@ -120,7 +132,6 @@
+     document.getElementById('shootingOverlay')?.remove();
+ 
+     if (won) {
+-        alert("YOU SURVIVED! 10 MONSTERS KILLED!");
+         popupsActive = true;
+         ShowFakePopup();
+         // Tell the other games that the player won
+@@ -132,7 +143,6 @@
+         }));
+     }
+     else {
+-        alert("TIME'S UP! YOU FAILED!");
+         popupsActive = true;
+         ShowFakePopup();
+ 
+@@ -225,4 +235,4 @@
+         // Stop new popups from appearing
+         popupsActive = false;
+     }
+-});
+\ No newline at end of file
++});
+Index: js/sound.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\nconst sounds = {\n    knife: new Audio(\"src/assets/sounds/knife.mp3\"),\n    heartbeat: new Audio(\"src/assets/sounds/heartbeat.wav\"),\n    gunshot: new Audio(\"src/assets/sounds/gunshot.wav\"),\n    gameover: new Audio(\"src/assets/sounds/gameover.wav\")\n};\n\nsounds.heartbeat.loop = true;\nsounds.heartbeat.volume = 0.3;\n\nsounds.knife.volume = 0.8;\nsounds.gunshot.volume = 0.6;\nsounds.gameover.volume = 0.7;\n\nasync function playSound(name) {\n    const sound = sounds[name];\n\n    if (!sound) throw new Error(`Unknown sound: ${name}`);\n\n    sound.muted = false;\n    sound.currentTime = 0;\n    await sound.play();\n}\n\nconst testSoundButton = document.getElementById(\"testSoundButton\");\nconst soundStatus = document.getElementById(\"soundStatus\");\n\ntestSoundButton.addEventListener(\"click\", async () => {\n    soundStatus.textContent = \"Loading knife sound…\";\n    try {\n        await playSound(\"knife\");\n        soundStatus.textContent = \"Playing knife sound \uD83D\uDD0A\";\n    } catch (error) {\n        console.error(\"Sound could not play:\", error);\n        soundStatus.textContent = `Could not play knife sound: ${error.message}`;\n    }\n});\n\nfunction stopSound(name) {\n    const sound = sounds[name];\n\n    if (!sound) return;\n\n    sound.pause();\n    sound.currentTime = 0;\n}\n\nfunction updateHeartbeat(sanity) {\n    const heartbeat = sounds.heartbeat;\n\n    if (sanity <= 0) {\n        heartbeat.playbackRate = 2;\n        heartbeat.volume = 0.8;\n    } else if (sanity <= 50) {\n        heartbeat.playbackRate = 1.5;\n        heartbeat.volume = 0.6;\n    } else {\n        heartbeat.playbackRate = 1;\n        heartbeat.volume = 0.3;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/js/sound.js b/js/sound.js
+--- a/js/sound.js	(revision 9f36178968c72550b2a1ba9320c3d28e22a4f92c)
++++ b/js/sound.js	(date 1793368215678)
+@@ -3,7 +3,9 @@
+     knife: new Audio("src/assets/sounds/knife.mp3"),
+     heartbeat: new Audio("src/assets/sounds/heartbeat.wav"),
+     gunshot: new Audio("src/assets/sounds/gunshot.wav"),
+-    gameover: new Audio("src/assets/sounds/gameover.wav")
++    gameover: new Audio("src/assets/sounds/gameover.wav"),
++    screaming: new Audio("src/assets/sounds/screaming.m4a"),
++    ringing: new Audio("src/assets/sounds/ringing.wav")
+ };
+ 
+ sounds.heartbeat.loop = true;
+@@ -12,6 +14,25 @@
+ sounds.knife.volume = 0.8;
+ sounds.gunshot.volume = 0.6;
+ sounds.gameover.volume = 0.7;
++sounds.screaming.volume = 1;
++sounds.ringing.loop = true;
++sounds.ringing.volume = 0.7;
++
++let soundContext;
++
++function enableScreamBoost() {
++    if (!soundContext) {
++        soundContext = new AudioContext();
++        const screamSource = soundContext.createMediaElementSource(sounds.screaming);
++        const screamGain = soundContext.createGain();
++        screamGain.gain.value = 2; // 200% signal gain for the scream only.
++        screamSource.connect(screamGain);
++        screamGain.connect(soundContext.destination);
++    }
++
++    // Unlock audio on the first player action, before timed scares need it.
++    return soundContext.state === "suspended" ? soundContext.resume() : Promise.resolve();
++}
+ 
+ async function playSound(name) {
+     const sound = sounds[name];
+@@ -20,22 +41,41 @@
+ 
+     sound.muted = false;
+     sound.currentTime = 0;
+-    await sound.play();
++    await Promise.all([enableScreamBoost(), sound.play()]);
+ }
+ 
+-const testSoundButton = document.getElementById("testSoundButton");
+ const soundStatus = document.getElementById("soundStatus");
+ 
+-testSoundButton.addEventListener("click", async () => {
+-    soundStatus.textContent = "Loading knife sound…";
+-    try {
+-        await playSound("knife");
+-        soundStatus.textContent = "Playing knife sound 🔊";
+-    } catch (error) {
+-        console.error("Sound could not play:", error);
+-        soundStatus.textContent = `Could not play knife sound: ${error.message}`;
++function playGameSound(name) {
++    return playSound(name).catch(error => {
++        // Rapid shots can interrupt the previous playback while it is loading.
++        if (error.name === "AbortError") return;
++        console.error(`Could not play ${name}:`, error);
++        soundStatus.textContent = `Could not play ${name}: ${error.message}`;
++    });
++}
++
++function stopAllSounds() {
++    for (const name of Object.keys(sounds)) {
++        sounds[name].onended = null;
++        stopSound(name);
+     }
+-});
++}
++
++function playRoundEnding(won) {
++    stopAllSounds();
++    if (!won) {
++        sounds.screaming.onended = () => {
++            sounds.screaming.onended = null;
++            playGameSound("gameover");
++        };
++    }
++    playSound("screaming").catch(error => {
++        if (error.name === "AbortError") return;
++        soundStatus.textContent = `Could not play screaming: ${error.message}`;
++        if (!won) playGameSound("gameover");
++    });
++}
+ 
+ function stopSound(name) {
+     const sound = sounds[name];
+Index: js/script.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\nconst answerButton = document.getElementById(\"answerButton\");\nconst message = document.getElementById(\"message\");\nconst phone = document.querySelector(\".phone\");\n\nanswerButton.addEventListener(\"click\", AnswerCall);\n\nfunction AnswerCall() {\n    message.textContent =\n        \"GHOSTFACE: Hello. Do you like scary code?\";\n\n    phone.textContent = \"\uD83D\uDC80\";\n    answerButton.textContent = \"START GAME\";\n\n    answerButton.removeEventListener(\"click\", AnswerCall);\n    answerButton.addEventListener(\"click\", StartGame);\n}\n\nfunction StartGame() {\n    message.textContent = \"Your nightmare begins...\";\n    answerButton.style.display = \"none\";\n    playSound(\"heartbeat\").catch(error => {\n        soundStatus.textContent = `Could not play heartbeat: ${error.message}`;\n    });\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/js/script.js b/js/script.js
+--- a/js/script.js	(revision 9f36178968c72550b2a1ba9320c3d28e22a4f92c)
++++ b/js/script.js	(date 1793368215679)
+@@ -2,24 +2,63 @@
+ const answerButton = document.getElementById("answerButton");
+ const message = document.getElementById("message");
+ const phone = document.querySelector(".phone");
++const enableRingingButton = document.getElementById("enableRingingButton");
++let callAnswered = false;
++
++async function StartRinging() {
++    if (callAnswered) return;
++    try {
++        // Keep incoming-call playback independent of the scream's audio context.
++        await sounds.ringing.play();
++        if (callAnswered) {
++            stopSound("ringing");
++            return;
++        }
++        enableRingingButton.hidden = true;
++        soundStatus.textContent = "";
++    } catch (error) {
++        if (callAnswered || error.name === "AbortError") return;
++        if (error.name === "NotAllowedError") {
++            enableRingingButton.hidden = false;
++            soundStatus.textContent = "Enable ringing to hear the incoming call.";
++        } else {
++            soundStatus.textContent = `Could not play ringing: ${error.message}`;
++        }
++    }
++}
++
++enableRingingButton.addEventListener("click", StartRinging);
++StartRinging();
+ 
+ answerButton.addEventListener("click", AnswerCall);
+ 
+ function AnswerCall() {
++    callAnswered = true;
++    stopSound("ringing");
++    enableRingingButton.hidden = true;
++    soundStatus.textContent = "";
+     message.textContent =
+         "GHOSTFACE: Hello. Do you like scary code?";
+ 
+     phone.textContent = "💀";
+-    answerButton.textContent = "START GAME";
++    answerButton.textContent = "START SHOOTING";
+ 
+     answerButton.removeEventListener("click", AnswerCall);
+     answerButton.addEventListener("click", StartGame);
+ }
+ 
+ function StartGame() {
++    soundStatus.textContent = "";
+     message.textContent = "Your nightmare begins...";
+     answerButton.style.display = "none";
+-    playSound("heartbeat").catch(error => {
+-        soundStatus.textContent = `Could not play heartbeat: ${error.message}`;
+-    });
++    StartShootingGame();
+ }
++
++document.addEventListener("shootingGameEnded", event => {
++    playRoundEnding(event.detail.won);
++    message.textContent = event.detail.won
++        ? "You survived! Ready for another round?"
++        : "Try again. Shoot 10 monsters to survive!";
++    answerButton.textContent = "START SHOOTING";
++    answerButton.style.display = "";
++});
