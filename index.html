@@ -1,28 +1,88 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCREAM.exe</title>
-    <link rel="stylesheet" href="style.css">
-
-    <script src="js/sound.js" defer></script>
-    <script src="js/script.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HORRORCRAFT: THE BACKSTABBER</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style/game-character.css" />
+  <script src="js/sound.js" defer></script>
+  <script src="js/blood.js" defer></script>
+  <script src="js/difficulty.js" defer></script>
+  <script src="js/knives.js" defer></script>
+  <script src="js/shooting.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/script.js" defer></script>
 </head>
-
 <body>
-<main class="game">
+<main>
+  <section id="startMenu" class="game start-menu" aria-label="Start menu">
+    <p class="eyebrow">HORRORCRAFT / THE BACKSTABBER</p>
     <h1>SCREAM.exe</h1>
-    <p id="message">INCOMING CALL...</p>
-    <div class="phone">☎</div>
+    <p id="message" role="status">INCOMING CALL...</p>
+    <div class="phone" aria-hidden="true">☎</div>
+    <button id="answerButton" type="button">ANSWER CALL</button>
+    <p class="instructions">Pull the knives. Survive the blood. Shoot the monster before time runs out.</p>
+    <button id="testSoundButton" class="secondary" type="button">TEST SOUND 🔊</button>
+    <p id="soundStatus" class="status" role="status" aria-live="polite"></p>
+  </section>
 
-    <button id="answerButton">ANSWER CALL</button>
-
-    <button id="testSoundButton" type="button">
-        TEST SOUND 🔊
-    </button>
-    <p id="soundStatus" role="status" aria-live="polite"></p>
+  <section id="gameScreen" class="game-screen" aria-label="Horrorcraft game" hidden>
+    <div class="crt-overlay" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <canvas id="bloodCanvas" aria-hidden="true"></canvas>
+    <header class="hud">
+      <div class="brand"><h1>HORRORCRAFT</h1><p>THE BACKSTABBER</p></div>
+      <div class="stat"><span>SCORE</span><output id="scoreDisplay">000000</output></div>
+      <div class="stat"><span>KNIVES REMOVED</span><output id="knivesDisplay">0</output></div>
+      <div class="stat"><span>DIFFICULTY</span><output id="difficultyDisplay">0</output></div>
+      <div class="blood-meter">
+        <div>BLOOD <output id="contaminationPercent">0%</output></div>
+        <div class="meter-track"><div id="contaminationBar"></div></div>
+      </div>
+      <div id="livesContainer" class="lives" aria-label="3 lives remaining"></div>
+      <button id="muteButton" class="secondary" type="button" aria-pressed="false">MUTE</button>
+      <button id="menuButton" class="secondary" type="button">MENU</button>
+    </header>
+    <div id="gameContainer" class="game-container">
+      <div id="characterScene" class="game-character-container">
+        <div class="game-character" role="img" aria-label="Pumpkin character"></div>
+        <div id="knives" aria-label="Knives to remove"></div>
+      </div>
+      <canvas id="gameCanvas" aria-hidden="true"></canvas>
+      <button id="monsterTarget" type="button" aria-label="Shoot monster" hidden></button>
+      <div id="monsterWarning" class="monster-warning" role="status" hidden>
+        <strong>MONSTER ATTACKING!</strong>
+        <span>SHOOT TO CLEAN THE SCREEN · <output id="monsterTimer">6.0</output>s</span>
+      </div>
+      <p id="gameHint" class="game-hint">Pull the knives. Every pull makes the remaining hitboxes smaller.</p>
+    </div>
+    <footer class="game-footer">
+      <span id="gameStatus" role="status">Your nightmare begins...</span>
+      <details class="dev-tools">
+        <summary>DEV CONTROLS</summary>
+        <div class="dev-buttons">
+          <button type="button" id="addBloodButton">+1 splatter</button>
+          <button type="button" id="maxBloodButton">MAX BLOOD</button>
+          <button type="button" id="cleanBloodButton">CLEAN ALL</button>
+          <button type="button" id="spawnMonsterButton">SPAWN MONSTER</button>
+          <label><input id="hitboxDebug" type="checkbox" /> Show hitboxes</label>
+        </div>
+      </details>
+    </footer>
+    <section id="gameOverOverlay" class="game-over" aria-labelledby="gameOverTitle" hidden>
+      <p class="eyebrow">THE DEMON CONSUMED YOUR CURSED SOUL</p>
+      <h2 id="gameOverTitle">YOU DIED!</h2>
+      <dl class="final-stats">
+        <div><dt>FINAL SCORE</dt><dd id="finalScore">0</dd></div>
+        <div><dt>KNIVES PULLED</dt><dd id="finalKnives">0</dd></div>
+        <div><dt>BLOOD</dt><dd id="finalBlood">0%</dd></div>
+      </dl>
+      <button id="restartGameBtn" type="button">TRY AGAIN IF YOU DARE ☠</button>
+      <button id="gameOverMenuButton" class="secondary" type="button">BACK TO MENU</button>
+    </section>
+  </section>
 </main>
 
     <script src="js/shooting.js"></script>
