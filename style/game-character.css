@@ -21,21 +21,21 @@
   position: absolute;
 }
 
-.game-character-container .knive.left-foot {
+.game-character-container .knife.left-foot {
   height: 80px;
   width: 80px;
   bottom: 56px;
   left: 174px;
   transform: rotate3d(10, 1, 1, 313deg);
 }
-.game-character-container .knive.right-hand {
+.game-character-container .knife.right-hand {
   height: 80px;
   width: 80px;
   top: 156px;
   left: 374px;
   transform: rotate3d(10, 1, 1, 313deg);
 }
-.game-character-container .knive.left-foot {
+.game-character-container .knife.left-foot {
   height: 80px;
   width: 80px;
   bottom: 56px;
