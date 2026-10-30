@@ -1,0 +1,44 @@
+.game-character-container {
+  width: 600px;
+  height: 600px;
+  position: relative;
+}
+
+.game-character-container .game-character {
+  background-image: url("./../src/assets/images/minecraft-characters/pumpkin-boy.webp");
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  height: 100%;
+  width: auto;
+}
+
+.game-character-container .knive {
+  background-image: url("./../src/assets/images/items/knife-with-blood.webp");
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: absolute;
+}
+
+.game-character-container .knive.left-foot {
+  height: 80px;
+  width: 80px;
+  bottom: 56px;
+  left: 174px;
+  transform: rotate3d(10, 1, 1, 313deg);
+}
+.game-character-container .knive.right-hand {
+  height: 80px;
+  width: 80px;
+  top: 156px;
+  left: 374px;
+  transform: rotate3d(10, 1, 1, 313deg);
+}
+.game-character-container .knive.left-foot {
+  height: 80px;
+  width: 80px;
+  bottom: 56px;
+  left: 174px;
+  transform: rotate3d(10, 1, 1, 313deg);
+}
