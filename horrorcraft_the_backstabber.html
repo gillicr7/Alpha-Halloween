@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HORRORCRAFT: THE BACKSTABBER</title>
+    <!-- Tailwind CSS for UI Layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #050203;
+            color: #e2e8f0;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+        }
+
+        .font-horror {
+            font-family: 'Creepster', cursive;
+        }
+
+        .font-arcade {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* Glitch Effect */
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-8px, 8px) scale(1.02) }
+            40% { transform: translate(-8px, -8px) rotate(-1deg) }
+            60% { transform: translate(8px, 8px) scale(0.98) }
+            80% { transform: translate(8px, -8px) rotate(1deg) }
+            100% { transform: translate(0) }
+        }
+
+        .glitch-active {
+            animation: glitch 0.08s infinite;
+        }
+
+        @keyframes strobe {
+            0%, 100% { background-color: #000; }
+            50% { background-color: #500; }
+        }
+
+        .psychotic-strobe {
+            animation: strobe 0.05s infinite;
+        }
+
+        /* Flicker Ambient Light */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            41.99% { opacity: 1; }
+            42% { opacity: 0.3; }
+            43% { opacity: 0.8; }
+            45% { opacity: 0.1; }
+            46% { opacity: 0.9; }
+            78.99% { opacity: 1; }
+            79% { opacity: 0.4; }
+            81% { opacity: 0.8; }
+        }
+
+        .flicker-overlay {
+            animation: flicker 4s infinite;
+            background: radial-gradient(circle at 50% 50%, rgba(180, 0, 0, 0.15), rgba(0, 0, 0, 0.85));
+            pointer-events: none;
+        }
+
+        /* Custom Crosshair for Shooting Mode */
+        .crosshair-mode {
+            cursor: crosshair !important;
+        }
+
+        /* Retro CRT Scanlines */
+        .crt-overlay {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* CRT Vignette */
+        .vignette {
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+            pointer-events: none;
+        }
+
+        /* Blood Splatter Layer */
+        #bloodCanvas {
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        /* Custom Scrollbar for Dev Tools */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #880000;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between h-screen w-screen bg-black overflow-hidden select-none">
+
+    <!-- Ambient Visual Overlays -->
+    <div id="flickerBg" class="absolute inset-0 flicker-overlay z-10"></div>
+    <div class="absolute inset-0 crt-overlay z-20"></div>
+    <div class="absolute inset-0 vignette z-20"></div>
+
+    <!-- MAIN BLOOD CANVAS OVERLAY (Modular Blood System) -->
+    <canvas id="bloodCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+    <!-- TOP HEADER / ARCADE HUD -->
+    <header class="relative z-40 p-4 flex justify-between items-center bg-black/70 border-b-2 border-red-900/50 backdrop-blur-sm">
+        <div class="flex items-center space-x-6">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-horror text-red-600 tracking-wider drop-shadow-[0_2px_10px_rgba(255,0,0,0.8)]">
+                    HORRORCRAFT
+                </h1>
+                <p class="text-xs font-arcade text-zinc-500 tracking-widest -mt-1">THE BACKSTABBER</p>
+            </div>
+            
+            <div class="hidden sm:flex space-x-6 text-xl font-arcade">
+                <div class="bg-zinc-900/80 px-3 py-1.5 rounded border border-red-900/40">
+                    <span class="text-zinc-500 text-xs block">SCORE</span>
+                    <span id="scoreDisplay" class="text-yellow-500">000000</span>
+                </div>
+                <div class="bg-zinc-900/80 px-3 py-1.5 rounded border border-red-900/40">
+                    <span class="text-zinc-500 text-xs block">KNIVES REMOVED</span>
+                    <span id="knivesDisplay" class="text-red-500">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTAMINATION METER & LIVES -->
+        <div class="flex items-center space-x-4">
+            <div class="w-36 md:w-48 bg-zinc-900 p-1.5 rounded border border-red-900/60 shadow-inner">
+                <div class="flex justify-between text-xs font-arcade text-zinc-400 mb-1">
+                    <span>BLOOD LOG</span>
+                    <span id="contaminationPercent" class="text-red-500 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-zinc-950 h-3 rounded-sm overflow-hidden p-0.5">
+                    <div id="contaminationBar" class="bg-gradient-to-r from-red-900 via-red-600 to-red-500 h-full w-0% transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- LIVES / HEARTICONS -->
+            <div class="flex space-x-1" id="livesContainer">
+                <span class="text-red-600 text-2xl drop-shadow-[0_0_5px_rgba(255,0,0,0.8)]">🖤</span>
+                <span class="text-red-600 text-2xl drop-shadow-[0_0_5px_rgba(255,0,0,0.8)]">🖤</span>
+                <span class="text-red-600 text-2xl drop-shadow-[0_0_5px_rgba(255,0,0,0.8)]">🖤</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- CENTER GAMEPLAY AREA -->
+    <main id="gameContainer" class="relative flex-1 flex items-center justify-center overflow-hidden">
+        
+        <!-- Interactive Game Viewport (Knife & Character Scene) -->
+        <canvas id="gameCanvas" class="w-full h-full cursor-pointer"></canvas>
+
+        <!-- MONSTER WARNING ALARM OVERLAY -->
+        <div id="monsterWarning" class="hidden absolute top-12 left-1/2 transform -translate-x-1/2 z-40 bg-red-950/90 border-2 border-red-600 text-red-500 px-6 py-3 rounded-lg text-center shadow-[0_0_30px_rgba(255,0,0,0.8)] animate-pulse">
+            <p class="font-arcade text-xs text-yellow-400 uppercase tracking-widest mb-1">⚠️ SLAUGHTER ALERT ⚠️</p>
+            <p class="font-horror text-3xl md:text-4xl text-white tracking-wide">MONSTER ATTACKING!</p>
+            <div class="font-arcade text-2xl text-red-400 mt-1">
+                TIME LEFT: <span id="monsterTimer" class="text-yellow-400 text-3xl">5.0</span>s
+            </div>
+            <p class="text-xs text-zinc-300 font-mono mt-1">SHOOT THE BEAST TO CLEAN THE SCREEN!</p>
+        </div>
+
+        <!-- AUDIO INITIALIZE PROMPT OVERLAY -->
+        <div id="startOverlay" class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-6 text-center">
+            <h2 class="font-horror text-6xl text-red-600 mb-2 drop-shadow-[0_0_20px_rgba(255,0,0,0.8)]">HORRORCRAFT</h2>
+            <p class="font-arcade text-yellow-500 text-sm mb-6">THE BACKSTABBER</p>
+            <div class="max-w-md text-zinc-400 text-lg mb-8 space-y-2 border border-red-900/40 p-4 rounded bg-zinc-950/80">
+                <p>1. <span class="text-red-400">Pull knives</span> from Steve's blocky back.</p>
+                <p>2. Blood covers your camera viewport with every pull.</p>
+                <p>3. When the <span class="text-red-500 font-bold">SLASHER MONSTER</span> spawns, shoot it in time!</p>
+                <p>4. Killing the beast <span class="text-emerald-400 font-bold">CLEANS YOUR SCREEN</span>!</p>
+            </div>
+            <button id="startGameBtn" class="font-arcade bg-red-700 hover:bg-red-600 text-white px-8 py-4 rounded-lg text-lg border-2 border-red-400 shadow-[0_0_25px_rgba(255,0,0,0.6)] transition transform hover:scale-105 active:scale-95">
+                ENTER THE SLAUGHTERHOUSE
+            </button>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        <div id="gameOverOverlay" class="hidden absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-6 text-center psychotic-strobe glitch-active overflow-hidden">
+            <div id="jumpscareFace" class="absolute inset-0 bg-red-950/80 flex items-center justify-center opacity-30 pointer-events-none select-none">
+                <span class="text-9xl font-horror text-red-500 scale-150 animate-ping">👹</span>
+            </div>
+            
+            <h2 class="font-horror text-7xl md:text-9xl text-red-600 mb-2 drop-shadow-[0_0_5px_rgba(255,255,255,1)] tracking-widest animate-bounce">
+                YOU DIED IN AGONY!
+            </h2>
+            <p class="font-arcade text-red-400 text-sm md:text-base tracking-widest mb-6 bg-black/80 px-4 py-1 border border-red-600">
+                THE DEMON CONSUMED YOUR CURSED SOUL
+            </p>
+            
+            <div class="bg-black/90 border-2 border-red-600 p-6 rounded-lg text-left w-full max-w-md font-arcade text-sm space-y-3 mb-8 shadow-[0_0_50px_rgba(255,0,0,1)] relative z-10">
+                <div class="flex justify-between border-b border-red-900 pb-2">
+                    <span class="text-zinc-400">FINAL SLAUGHTER SCORE:</span>
+                    <span id="finalScore" class="text-yellow-400 text-lg">0</span>
+                </div>
+                <div class="flex justify-between border-b border-red-900 pb-2">
+                    <span class="text-zinc-400">KNIVES PULLED:</span>
+                    <span id="finalKnives" class="text-red-500 text-lg">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-zinc-400">BLOOD CONTAMINATION:</span>
+                    <span id="finalBlood" class="text-red-600 text-lg">100%</span>
+                </div>
+            </div>
+
+            <button id="restartGameBtn" class="relative z-10 font-arcade bg-red-800 hover:bg-red-600 text-white px-10 py-5 rounded-lg text-xl border-4 border-red-500 shadow-[0_0_40px_rgba(255,0,0,1)] transition transform hover:scale-110 active:scale-95 animate-pulse">
+                TRY AGAIN IF YOU DARE ☠️
+            </button>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM FLOATING DEV CONTROL PANEL (Required Hackathon Tooling) -->
+    <footer class="relative z-40 bg-zinc-950/90 border-t border-red-900/40 p-2.5 px-4 flex flex-wrap justify-between items-center text-xs font-mono">
+        <div class="flex items-center space-x-2 mb-1 sm:mb-0">
+            <span class="bg-red-900/50 text-red-300 px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wider border border-red-700/50">
+                DEV TEST HARNESS
+            </span>
+            <span class="text-zinc-500 hidden md:inline">Modular Blood System Controls</span>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5 items-center">
+            <button onclick="addBloodSplatter()" class="bg-zinc-800 hover:bg-red-900/80 text-zinc-300 hover:text-white px-2 py-1 rounded border border-zinc-700 transition">
+                +1 Splatter
+            </button>
+            <button onclick="addBloodSplatterBatch(5)" class="bg-zinc-800 hover:bg-red-900/80 text-zinc-300 hover:text-white px-2 py-1 rounded border border-zinc-700 transition">
+                +5 Splatters
+            </button>
+            <button onclick="setBloodIntensity(5)" class="bg-red-950 hover:bg-red-800 text-red-200 px-2 py-1 rounded border border-red-700 transition">
+                MAX Blood (Lvl 5)
+            </button>
+            <span class="text-zinc-700">|</span>
+            <button onclick="cleanBlood(25)" class="bg-zinc-800 hover:bg-emerald-950 text-zinc-300 hover:text-emerald-200 px-2 py-1 rounded border border-zinc-700 transition">
+                Clean 25%
+            </button>
+            <button onclick="cleanBlood(50)" class="bg-zinc-800 hover:bg-emerald-950 text-zinc-300 hover:text-emerald-200 px-2 py-1 rounded border border-zinc-700 transition">
+                Clean 50%
+            </button>
+            <button onclick="cleanBlood(100)" class="bg-emerald-900/80 hover:bg-emerald-700 text-white px-2 py-1 rounded border border-emerald-600 transition">
+                Clean All
+            </button>
+            <button onclick="resetBlood()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 px-2 py-1 rounded border border-zinc-800 transition">
+                Reset System
+            </button>
+        </div>
+    </footer>
+
+    <!-- GAME ENGINE & MODULE SCRIPTS -->
+    <script>
+        /* ==========================================================================
+           1. PROCEDURAL HORROR AUDIO SYNTHESIZER (Web Audio API)
+           ========================================================================== */
+        class HorrorAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.initialized = false;
+            }
+
+            init() {
+                if (this.initialized) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+                this.initialized = true;
+            }
+
+            // Procedural knife pull sound (squish + metallic scrape)
+            playKnifePullSound() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+
+                // Squish Noise
+                const bufferSize = this.ctx.sampleRate * 0.15;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, now);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
+
+                // Metallic Cling
+                const osc = this.ctx.createOscillator();
+                const metallicGain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+
+                metallicGain.gain.setValueAtTime(0.4, now);
+                metallicGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+                osc.connect(metallicGain);
+                metallicGain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+
+            // Procedural wet blood splatter squirt sound
+            playSplatterSound() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(40, now + 0.2);
+
+                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            // Monster Warning Alarm Siren
+            playMonsterAlarm() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(700, now + 0.25);
+                osc.frequency.linearRampToValueAtTime(300, now + 0.5);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+
+            // Gunshot effect for shooting mini-game
+            playGunshotSound() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.3;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.05));
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(1.0, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
+            }
+
+            // Screen Clean Victory Sound
+            playCleanVictorySound() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C E G C
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+
+            // Jumpscare / Game Over Sound
+            playJumpscareSound() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                
+                // Screaming Noise Layer
+                const bufferSize = this.ctx.sampleRate * 1.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.sin(i * 0.05);
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1200, now);
+                filter.Q.setValueAtTime(3.0, now);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(1.0, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
+
+                // Harsh Distorted Pitch Drop
+                const osc = this.ctx.createOscillator();
+                const oscGain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 1.0);
+
+                oscGain.gain.setValueAtTime(1.0, now);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
+
+                osc.connect(oscGain);
+                oscGain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 1.0);
+            }
+        }
+
+        const horrorAudio = new HorrorAudioEngine();
+
+        /* ==========================================================================
+           2. MODULAR BLOOD SPLATTER & CLEANING SYSTEM
+           ========================================================================== */
+        class BloodSplatterSystem {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.splatters = [];
+                this.drips = [];
+                this.intensityLevel = 1;
+
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+
+                // Animation loop for blood dripping
+                this.animate = this.animate.bind(this);
+                requestAnimationFrame(this.animate);
+            }
+
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.redraw();
+            }
+
+            // Core Global Function: Add Blood Splatter
+            addBloodSplatter() {
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+
+                // Generate 3 to 5 distinct splatters per single call for MASSIVE coverage
+                const burstCount = Math.floor(Math.random() * 3) + 3;
+
+                for (let b = 0; b < burstCount; b++) {
+                    const x = Math.random() * width;
+                    const y = Math.random() * height;
+                    const radius = Math.random() * 85 + 45; // Much larger splatters
+
+                    const splatter = {
+                        x: x,
+                        y: y,
+                        radius: radius,
+                        rotation: Math.random() * Math.PI * 2,
+                        opacity: 0,
+                        targetOpacity: Math.random() * 0.3 + 0.7,
+                        color: this.getRandomBloodColor(),
+                        droplets: [],
+                        isBlocky: Math.random() > 0.3
+                    };
+
+                    // Sub-droplets
+                    const numDroplets = Math.floor(Math.random() * 16) + 10;
+                    for (let i = 0; i < numDroplets; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = radius * (1 + Math.random() * 2.2);
+                        splatter.droplets.push({
+                            dx: Math.cos(angle) * dist,
+                            dy: Math.sin(angle) * dist,
+                            r: Math.random() * (radius * 0.3) + 4
+                        });
+                    }
+
+                    this.splatters.push(splatter);
+
+                    // Add thick dripping
+                    if (Math.random() > 0.2) {
+                        this.drips.push({
+                            x: splatter.x + (Math.random() - 0.5) * radius,
+                            y: splatter.y,
+                            length: 0,
+                            maxLength: Math.random() * 250 + 80,
+                            speed: Math.random() * 4 + 2,
+                            width: Math.random() * 10 + 4,
+                            color: splatter.color
+                        });
+                    }
+                }
+
+                horrorAudio.playSplatterSound();
+                this.updateContaminationUI();
+            }
+
+            // Core Global Function: Clean Blood
+            cleanBlood(amountPercent) {
+                if (this.splatters.length === 0) return;
+
+                const removeCount = Math.ceil(this.splatters.length * (amountPercent / 100));
+                this.splatters.splice(0, removeCount);
+                this.drips.splice(0, Math.ceil(this.drips.length * (amountPercent / 100)));
+
+                this.updateContaminationUI();
+                this.redraw();
+                horrorAudio.playCleanVictorySound();
+            }
+
+            // Core Global Function: Reset Blood
+            resetBlood() {
+                this.splatters = [];
+                this.drips = [];
+                this.intensityLevel = 1;
+                this.updateContaminationUI();
+                this.redraw();
+            }
+
+            // Set specific intensity level (1 to 5)
+            setIntensityLevel(level) {
+                this.intensityLevel = Math.max(1, Math.min(5, level));
+                const targetCounts = [3, 10, 22, 40, 75];
+                const desiredCount = targetCounts[this.intensityLevel - 1];
+
+                this.splatters = [];
+                this.drips = [];
+                for (let i = 0; i < desiredCount; i++) {
+                    this.addBloodSplatter();
+                }
+            }
+
+            getRandomBloodColor() {
+                const colors = [
+                    { r: 120, g: 0, b: 0 },   // Deep dark crimson
+                    { r: 160, g: 10, b: 10 }, // Bright fresh blood
+                    { r: 80, g: 0, b: 0 },    // Coagulated dark red
+                    { r: 140, g: 5, b: 15 }   // Slasher red
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            getContaminationPercentage() {
+                const totalArea = this.canvas.width * this.canvas.height;
+                let bloodArea = 0;
+                this.splatters.forEach(s => {
+                    bloodArea += Math.PI * s.radius * s.radius * 3.5;
+                });
+                return Math.min(100, Math.round((bloodArea / totalArea) * 100));
+            }
+
+            updateContaminationUI() {
+                const percent = this.getContaminationPercentage();
+                document.getElementById('contaminationPercent').innerText = `${percent}%`;
+                document.getElementById('contaminationBar').style.width = `${percent}%`;
+
+                // Trigger Demon attack specifically when screen hits 80%+ blood
+                if (percent >= 80 && window.gameEngine && !window.gameEngine.monsterActive) {
+                    window.gameEngine.spawnMonster();
+                }
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw Splatters
+                this.splatters.forEach(s => {
+                    if (s.opacity < s.targetOpacity) {
+                        s.opacity += 0.05;
+                    }
+                    this.drawSplatter(s);
+                });
+
+                // Update & Draw Dripping Blood
+                this.drips.forEach((d, idx) => {
+                    if (d.length < d.maxLength) {
+                        d.length += d.speed;
+                    }
+                    this.drawDrip(d);
+                });
+
+                requestAnimationFrame(this.animate);
+            }
+
+            drawSplatter(s) {
+                this.ctx.save();
+                this.ctx.translate(s.x, s.y);
+                this.ctx.rotate(s.rotation);
+                this.ctx.globalAlpha = s.opacity;
+
+                const c = s.color;
+                this.ctx.fillStyle = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                this.ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                this.ctx.shadowBlur = 8;
+
+                if (s.isBlocky) {
+                    // Minecraft Blocky Pixelated Splatter
+                    const r = s.radius;
+                    this.ctx.fillRect(-r * 0.7, -r * 0.7, r * 1.4, r * 1.4);
+                    this.ctx.fillRect(-r * 0.4, -r, r * 0.8, r * 2);
+                    this.ctx.fillRect(-r, -r * 0.4, r * 2, r * 0.8);
+                } else {
+                    // Organic Irregular Splatter
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, s.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+
+                // Sub-droplets around splatter
+                s.droplets.forEach(drop => {
+                    if (s.isBlocky) {
+                        this.ctx.fillRect(drop.dx, drop.dy, drop.r, drop.r);
+                    } else {
+                        this.ctx.beginPath();
+                        this.ctx.arc(drop.dx, drop.dy, drop.r, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+
+                // Wet liquid specular shine highlight
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                this.ctx.beginPath();
+                this.ctx.arc(-s.radius * 0.25, -s.radius * 0.25, s.radius * 0.2, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.restore();
+            }
+
+            drawDrip(d) {
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.9;
+                const c = d.color;
+                this.ctx.fillStyle = `rgb(${c.r}, ${c.g}, ${c.b})`;
+                this.ctx.shadowColor = '#000';
+                this.ctx.shadowBlur = 4;
+
+                this.ctx.fillRect(d.x - d.width / 2, d.y, d.width, d.length);
+
+                // Bulbous tear-drop tip at bottom of drip
+                this.ctx.beginPath();
+                this.ctx.arc(d.x, d.y + d.length, d.width * 1.2, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.restore();
+            }
+
+            redraw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.splatters.forEach(s => this.drawSplatter(s));
+                this.drips.forEach(d => this.drawDrip(d));
+            }
+        }
+
+        /* ==========================================================================
+           3. GAMEPLAY ENGINE & CHARACTER INTERACTION
+           ========================================================================== */
+        class HorrorCraftGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.score = 0;
+                this.knivesExtracted = 0;
+                this.lives = 3;
+                
+                this.knives = [];
+                this.monsterActive = false;
+                this.monsterTimer = 5.0;
+                this.monsterPos = { x: 0, y: 0, width: 140, height: 220 };
+                this.monsterTimerInterval = null;
+                this.monsterTeleportInterval = null;
+
+                // Dynamic Moving Character Coordinates & Physics
+                this.characterPos = { x: 0, y: 0 };
+                this.targetPos = { x: 0, y: 0 };
+                this.walkSpeed = 0.08;
+                this.moveTimer = 0;
+                
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+
+                this.bindEvents();
+                this.generateKnives(4);
+
+                this.render = this.render.bind(this);
+                requestAnimationFrame(this.render);
+            }
+
+            resize() {
+                this.canvas.width = this.canvas.parentElement.clientWidth;
+                this.canvas.height = this.canvas.parentElement.clientHeight;
+                this.characterPos = {
+                    x: this.canvas.width / 2,
+                    y: this.canvas.height / 2 + 30
+                };
+                this.targetPos = { ...this.characterPos };
+            }
+
+            bindEvents() {
+                this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            }
+
+            generateKnives(count) {
+                this.knives = [];
+                for (let i = 0; i < count; i++) {
+                    this.knives.push({
+                        offsetX: (Math.random() - 0.5) * 70,
+                        offsetY: -30 + (Math.random() - 0.5) * 80,
+                        angle: (Math.random() - 0.5) * 0.8
+                    });
+                }
+            }
+
+            updateUI() {
+                document.getElementById('scoreDisplay').innerText = String(this.score).padStart(6, '0');
+                document.getElementById('knivesDisplay').innerText = this.knivesExtracted;
+
+                const livesContainer = document.getElementById('livesContainer');
+                livesContainer.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const heart = document.createElement('span');
+                    heart.className = i < this.lives ? 'text-red-600 text-2xl drop-shadow-[0_0_5px_rgba(255,0,0,0.8)]' : 'text-zinc-700 text-2xl';
+                    heart.innerText = i < this.lives ? '🖤' : '☠️';
+                    livesContainer.appendChild(heart);
+                }
+            }
+
+            handleCanvasClick(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                // Priority 1: Shoot Monster in Monster Mode
+                if (this.monsterActive) {
+                    horrorAudio.playGunshotSound();
+                    
+                    // Hitbox check
+                    if (
+                        mouseX >= this.monsterPos.x &&
+                        mouseX <= this.monsterPos.x + this.monsterPos.width &&
+                        mouseY >= this.monsterPos.y &&
+                        mouseY <= this.monsterPos.y + this.monsterPos.height
+                    ) {
+                        this.defeatMonster();
+                    }
+                    return;
+                }
+
+                // Priority 2: Pull Knives from Steve's Back
+                let knifePulled = false;
+                const charX = this.characterPos.x;
+                const charY = this.characterPos.y;
+
+                for (let i = this.knives.length - 1; i >= 0; i--) {
+                    const k = this.knives[i];
+                    const kx = charX + k.offsetX;
+                    const ky = charY + k.offsetY;
+
+                    // Click hit area check
+                    if (Math.abs(mouseX - kx) < 30 && Math.abs(mouseY - ky) < 40) {
+                        this.knives.splice(i, 1);
+                        knifePulled = true;
+                        
+                        this.score += 150;
+                        this.knivesExtracted++;
+
+                        horrorAudio.playKnifePullSound();
+                        window.bloodSystem.addBloodSplatter();
+                        break;
+                    }
+                }
+
+                // If all knives pulled, generate more with higher difficulty
+                if (this.knives.length === 0) {
+                    const newCount = Math.min(8, 4 + Math.floor(this.knivesExtracted / 5));
+                    this.generateKnives(newCount);
+                }
+
+                this.updateUI();
+            }
+
+            // Update Dynamic Character Movement (Steve walking around frantically)
+            updateCharacterMovement() {
+                this.moveTimer++;
+                
+                // Pick a new random target location every 60 frames
+                if (this.moveTimer % 60 === 0) {
+                    const margin = 120;
+                    this.targetPos.x = margin + Math.random() * (this.canvas.width - margin * 2);
+                    this.targetPos.y = this.canvas.height / 2 + (Math.random() - 0.5) * 120;
+                }
+
+                // Smoothly interpolate position towards target + panicked jitter
+                this.characterPos.x += (this.targetPos.x - this.characterPos.x) * this.walkSpeed;
+                this.characterPos.y += (this.targetPos.y - this.characterPos.y) * this.walkSpeed;
+            }
+
+            spawnMonster() {
+                this.monsterActive = true;
+                this.monsterTimer = Math.max(2.0, 4.5 - (this.knivesExtracted * 0.1));
+
+                this.teleportMonster();
+
+                document.getElementById('monsterWarning').classList.remove('hidden');
+                document.getElementById('gameContainer').classList.add('crosshair-mode');
+                horrorAudio.playMonsterAlarm();
+
+                // Rapid Teleport Interval (Every 220ms - Hyper-Fast Twitch Movement)
+                clearInterval(this.monsterTeleportInterval);
+                this.monsterTeleportInterval = setInterval(() => {
+                    this.teleportMonster();
+                }, 220);
+
+                // Countdown Timer Loop
+                clearInterval(this.monsterTimerInterval);
+                this.monsterTimerInterval = setInterval(() => {
+                    this.monsterTimer -= 0.1;
+                    document.getElementById('monsterTimer').innerText = Math.max(0, this.monsterTimer).toFixed(1);
+
+                    if (this.monsterTimer <= 0) {
+                        clearInterval(this.monsterTimerInterval);
+                        clearInterval(this.monsterTeleportInterval);
+                        this.handleMonsterAttackSuccess();
+                    }
+                }, 100);
+            }
+
+            teleportMonster() {
+                const margin = 100;
+                this.monsterPos.x = margin + Math.random() * (this.canvas.width - margin * 2 - 140);
+                this.monsterPos.y = margin + Math.random() * (this.canvas.height - margin * 2 - 220);
+            }
+
+            defeatMonster() {
+                this.monsterActive = false;
+                clearInterval(this.monsterTimerInterval);
+                clearInterval(this.monsterTeleportInterval);
+
+                document.getElementById('monsterWarning').classList.add('hidden');
+                document.getElementById('gameContainer').classList.remove('crosshair-mode');
+
+                this.score += 1000;
+                this.updateUI();
+
+                // Clean Screen Blood completely when demon is killed
+                window.bloodSystem.cleanBlood(100);
+            }
+
+            handleMonsterAttackSuccess() {
+                this.lives--;
+                this.monsterActive = false;
+                clearInterval(this.monsterTeleportInterval);
+                document.getElementById('monsterWarning').classList.add('hidden');
+                document.getElementById('gameContainer').classList.remove('crosshair-mode');
+
+                horrorAudio.playJumpscareSound();
+                window.bloodSystem.addBloodSplatter();
+
+                this.updateUI();
+
+                if (this.lives <= 0) {
+                    this.triggerGameOver();
+                }
+            }
+
+            triggerGameOver() {
+                document.getElementById('finalScore').innerText = this.score;
+                document.getElementById('finalKnives').innerText = this.knivesExtracted;
+                document.getElementById('finalBlood').innerText = `${window.bloodSystem.getContaminationPercentage()}%`;
+                document.getElementById('gameOverOverlay').classList.remove('hidden');
+            }
+
+            restart() {
+                this.score = 0;
+                this.knivesExtracted = 0;
+                this.lives = 3;
+                this.monsterActive = false;
+                
+                clearInterval(this.monsterTimerInterval);
+                clearInterval(this.monsterTeleportInterval);
+
+                document.getElementById('gameOverOverlay').classList.add('hidden');
+                document.getElementById('monsterWarning').classList.add('hidden');
+                document.getElementById('gameContainer').classList.remove('crosshair-mode');
+
+                window.bloodSystem.resetBlood();
+                this.generateKnives(4);
+                this.updateUI();
+            }
+
+            drawHorrorEnvironment() {
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+
+                // Dark Minecraft Nether-style room background
+                this.ctx.fillStyle = '#0c0709';
+                this.ctx.fillRect(0, 0, w, h);
+
+                // Grid ground floor
+                this.ctx.strokeStyle = '#1a0c10';
+                this.ctx.lineWidth = 2;
+                const gridSize = 40;
+                for (let x = 0; x < w; x += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, h / 2);
+                    this.ctx.lineTo(x, h);
+                    this.ctx.stroke();
+                }
+                for (let y = h / 2; y < h; y += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(w, y);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawBlockyCharacter() {
+                const cx = this.characterPos.x;
+                const cy = this.characterPos.y;
+
+                this.ctx.save();
+                this.ctx.translate(cx, cy);
+
+                // Body Shadow
+                this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                this.ctx.beginPath();
+                this.ctx.ellipse(0, 100, 50, 15, 0, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Steve Legs
+                this.ctx.fillStyle = '#1c2e4a'; // Dark blue jeans
+                this.ctx.fillRect(-22, 40, 20, 50);
+                this.ctx.fillRect(2, 40, 20, 50);
+
+                // Steve Torso (Back view)
+                this.ctx.fillStyle = '#008080'; // Teal shirt
+                this.ctx.fillRect(-26, -20, 52, 60);
+
+                // Steve Head (Blocky Square)
+                this.ctx.fillStyle = '#a27252'; // Skin tone
+                this.ctx.fillRect(-20, -60, 40, 40);
+
+                // Hair
+                this.ctx.fillStyle = '#3a2012';
+                this.ctx.fillRect(-20, -60, 40, 12);
+
+                this.ctx.restore();
+            }
+
+            drawKnives() {
+                const cx = this.characterPos.x;
+                const cy = this.characterPos.y;
+
+                this.knives.forEach(k => {
+                    this.ctx.save();
+                    this.ctx.translate(cx + k.offsetX, cy + k.offsetY);
+                    this.ctx.rotate(k.angle);
+
+                    // Metallic Blade
+                    this.ctx.fillStyle = '#d1d5db';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, 0);
+                    this.ctx.lineTo(-6, -35);
+                    this.ctx.lineTo(0, -45);
+                    this.ctx.lineTo(6, -35);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+
+                    // Knife Handle
+                    this.ctx.fillStyle = '#7f1d1d'; // Crimson handle
+                    this.ctx.fillRect(-4, 0, 8, 18);
+                    this.ctx.fillRect(-8, 0, 16, 4);
+
+                    this.ctx.restore();
+                });
+            }
+
+            drawMonster() {
+                const mx = this.monsterPos.x;
+                const my = this.monsterPos.y;
+
+                this.ctx.save();
+                this.ctx.translate(mx, my);
+
+                // Glitch distortion trail
+                this.ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+                this.ctx.fillRect((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, this.monsterPos.width, this.monsterPos.height);
+
+                // Pitch Black Entity Silhouette
+                this.ctx.fillStyle = '#050002';
+                this.ctx.fillRect(0, 0, this.monsterPos.width, this.monsterPos.height);
+
+                // Jagged Blocky Horns
+                this.ctx.fillRect(-15, -25, 30, 40);
+                this.ctx.fillRect(this.monsterPos.width - 15, -25, 30, 40);
+
+                // Glowing Crimson Eyes
+                this.ctx.fillStyle = '#ff0000';
+                this.ctx.shadowColor = '#ff0000';
+                this.ctx.shadowBlur = 15;
+                this.ctx.fillRect(25, 40, 25, 25);
+                this.ctx.fillRect(85, 40, 25, 25);
+
+                // Serrated Jagged Mouth
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.beginPath();
+                this.ctx.moveTo(30, 120);
+                for (let x = 30; x <= 110; x += 16) {
+                    this.ctx.lineTo(x, 120 + (x % 32 === 0 ? 25 : 0));
+                }
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                this.ctx.restore();
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Update Steve's movement
+                this.updateCharacterMovement();
+
+                // Draw Environment Scene
+                this.drawHorrorEnvironment();
+
+                // Draw Moving Blocky Steve
+                this.drawBlockyCharacter();
+
+                // Draw Knives (Following Steve's dynamically updating position)
+                this.drawKnives();
+
+                // Draw Scarier Teleporting Monster
+                if (this.monsterActive) {
+                    this.drawMonster();
+                }
+
+                requestAnimationFrame(this.render);
+            }
+        }
+
+        /* ==========================================================================
+           4. GLOBAL EXPOSED MODULE API FUNCTIONS (VS Code & Modular Integration)
+           ========================================================================== */
+        window.onload = () => {
+            // Instantiate Modular Systems
+            window.bloodSystem = new BloodSplatterSystem('bloodCanvas');
+            window.gameEngine = new HorrorCraftGame();
+
+            // Expose required Global API Functions for Dev Controls & Modules
+            window.addBloodSplatter = () => window.bloodSystem.addBloodSplatter();
+            window.addBloodSplatterBatch = (count) => {
+                for (let i = 0; i < count; i++) window.bloodSystem.addBloodSplatter();
+            };
+            window.cleanBlood = (amount) => window.bloodSystem.cleanBlood(amount);
+            window.resetBlood = () => window.bloodSystem.resetBlood();
+            window.setBloodIntensity = (lvl) => window.bloodSystem.setIntensityLevel(lvl);
+
+            // Bind Menu & Restart Buttons
+            document.getElementById('startGameBtn').addEventListener('click', () => {
+                horrorAudio.init();
+                document.getElementById('startOverlay').classList.add('hidden');
+            });
+
+            document.getElementById('restartGameBtn').addEventListener('click', () => {
+                window.gameEngine.restart();
+            });
+        };
+    </script>
+</body>
+</html>

@@ -19,4 +19,7 @@ function AnswerCall() {
 function StartGame() {
     message.textContent = "Your nightmare begins...";
     answerButton.style.display = "none";
+    playSound("heartbeat").catch(error => {
+        soundStatus.textContent = `Could not play heartbeat: ${error.message}`;
+    });
 }

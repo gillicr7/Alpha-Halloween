@@ -4,29 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SCREAM.exe</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="style/game-character.css" />
-    <script src="script.js" defer></script>
-  </head>
-  <body>
-    <main class="game">
-      <!-- <h1>SCREAM.exe</h1>
+    <link rel="stylesheet" href="style.css">
+
+    <script src="js/sound.js" defer></script>
+    <script src="js/script.js" defer></script>
+</head>
+
+<body>
+<main class="game">
+    <h1>SCREAM.exe</h1>
     <p id="message">INCOMING CALL...</p>
     <div class="phone">☎</div>
-    <button id="answerButton">ANSWER CALL</button> -->
 
-      <div class="game-character-container">
-        <div class="knife left-foot">
-          <button type="button" class="knife-hitbox" aria-label="Pull knife out"></button>
-        </div>
-        <div class="knife right-hand">
-          <button type="button" class="knife-hitbox" aria-label="Pull knife out"></button>
-        </div>
-        <div class="knife left-foot">
-          <button type="button" class="knife-hitbox" aria-label="Pull knife out"></button>
-        </div>
-        <div class="game-character"></div>
-      </div>
-    </main>
-  </body>
+    <button id="answerButton">ANSWER CALL</button>
+
+    <button id="testSoundButton" type="button">
+        TEST SOUND 🔊
+    </button>
+    <p id="soundStatus" role="status" aria-live="polite"></p>
+</main>
+</body>
 </html>
