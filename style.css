@@ -1,0 +1,50 @@
+
+body {
+    background-color: #080808;
+    color: #ff3333;
+    font-family: monospace;
+    min-height: 100vh;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+}
+
+.game {
+    padding: 30px;
+}
+
+h1 {
+    font-size: 55px;
+    text-shadow: 0 0 20px red;
+    animation: flicker 2s infinite;
+}
+
+.phone {
+    font-size: 100px;
+    margin: 40px;
+    animation: shake 0.3s infinite;
+}
+
+button {
+    background: darkred;
+    color: white;
+    border: 1px solid red;
+    padding: 15px 35px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: red;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(-10deg); }
+    50% { transform: rotate(10deg); }
+}
+
+@keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96%, 98% { opacity: 0.2; }
+}
