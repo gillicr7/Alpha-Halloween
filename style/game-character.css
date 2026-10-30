@@ -33,14 +33,17 @@
   pointer-events: none;
   width: 80px;
   height: 80px;
-  transform: rotate3d(10, 1, 1, 313deg);
+  transform: rotate(var(--knife-angle, -47deg));
+  transform-origin: 42% 62.4%;
 }
 
 .game-character-container .knife.left-foot {
+  --knife-angle: -20deg;
   bottom: 56px;
   left: 174px;
 }
 .game-character-container .knife.right-hand {
+  --knife-angle: 140deg;
   top: 156px;
   left: 374px;
 }
@@ -93,21 +96,25 @@
 }
 
 .game-character-container .knife.left-hand {
+  --knife-angle: -5deg;
   left: 132px;
   top: 254px;
 }
 
 .game-character-container .knife.chest {
+  --knife-angle: -110deg;
   left: 268px;
   top: 226px;
 }
 
 .game-character-container .knife.right-leg {
+  --knife-angle: 65deg;
   left: 322px;
   top: 435px;
 }
 
 .game-character-container .knife.left-shoulder {
+  --knife-angle: 95deg;
   left: 192px;
   top: 142px;
 }

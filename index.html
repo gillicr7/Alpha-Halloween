@@ -7,6 +7,10 @@
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="style/game-character.css" />
+  <link rel="stylesheet" href="style/shooting.css" />
+  <link rel="preload" as="image" href="src/assets/images/monster1.jpg" />
+  <link rel="preload" as="image" href="src/assets/images/monster2.jpg" />
+  <link rel="preload" as="image" href="src/assets/images/monster3.jpg" />
   <script src="js/sound.js" defer></script>
   <script src="js/blood.js" defer></script>
   <script src="js/difficulty.js" defer></script>
@@ -23,7 +27,7 @@
     <p id="message" role="status">INCOMING CALL...</p>
     <div class="phone" aria-hidden="true">☎</div>
     <button id="answerButton" type="button">ANSWER CALL</button>
-    <p class="instructions">Pull the knives. Survive the blood. Shoot the monster before time runs out.</p>
+    <p class="instructions">Pull the knives. Shoot 10 monsters before time runs out. Keep clicking when something stares back. Enjoy the system errors.</p>
     <button id="testSoundButton" class="secondary" type="button">TEST SOUND 🔊</button>
     <p id="soundStatus" class="status" role="status" aria-live="polite"></p>
   </section>
@@ -49,12 +53,6 @@
       <div id="characterScene" class="game-character-container">
         <div class="game-character" role="img" aria-label="Pumpkin character"></div>
         <div id="knives" aria-label="Knives to remove"></div>
-      </div>
-      <canvas id="gameCanvas" aria-hidden="true"></canvas>
-      <button id="monsterTarget" type="button" aria-label="Shoot monster" hidden></button>
-      <div id="monsterWarning" class="monster-warning" role="status" hidden>
-        <strong>MONSTER ATTACKING!</strong>
-        <span>SHOOT TO CLEAN THE SCREEN · <output id="monsterTimer">6.0</output>s</span>
       </div>
       <p id="gameHint" class="game-hint">Pull the knives. Every pull makes the remaining hitboxes smaller.</p>
     </div>
