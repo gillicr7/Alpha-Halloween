@@ -1,9 +1,9 @@
 
 const sounds = {
-    knife: new Audio("assets/sounds/knife.mp3"),
-    heartbeat: new Audio("assets/sounds/heartbeat.mp3"),
-    gunshot: new Audio("assets/sounds/gunshot.mp3"),
-    gameover: new Audio("assets/sounds/gameover.mp3")
+    knife: new Audio("src/assets/sounds/knife.mp3"),
+    heartbeat: new Audio("src/assets/sounds/heartbeat.wav"),
+    gunshot: new Audio("src/assets/sounds/gunshot.wav"),
+    gameover: new Audio("src/assets/sounds/gameover.wav")
 };
 
 sounds.heartbeat.loop = true;
@@ -13,16 +13,29 @@ sounds.knife.volume = 0.8;
 sounds.gunshot.volume = 0.6;
 sounds.gameover.volume = 0.7;
 
-function playSound(name) {
+async function playSound(name) {
     const sound = sounds[name];
 
-    if (!sound) return;
+    if (!sound) throw new Error(`Unknown sound: ${name}`);
 
+    sound.muted = false;
     sound.currentTime = 0;
-    sound.play().catch(error => {
-        console.warn("Sound could not play:", error);
-    });
+    await sound.play();
 }
+
+const testSoundButton = document.getElementById("testSoundButton");
+const soundStatus = document.getElementById("soundStatus");
+
+testSoundButton.addEventListener("click", async () => {
+    soundStatus.textContent = "Loading knife sound…";
+    try {
+        await playSound("knife");
+        soundStatus.textContent = "Playing knife sound 🔊";
+    } catch (error) {
+        console.error("Sound could not play:", error);
+        soundStatus.textContent = `Could not play knife sound: ${error.message}`;
+    }
+});
 
 function stopSound(name) {
     const sound = sounds[name];
