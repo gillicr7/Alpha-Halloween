@@ -3,7 +3,9 @@ const sounds = {
     knife: new Audio("src/assets/sounds/knife.mp3"),
     heartbeat: new Audio("src/assets/sounds/heartbeat.wav"),
     gunshot: new Audio("src/assets/sounds/gunshot.wav"),
-    gameover: new Audio("src/assets/sounds/gameover.wav")
+    gameover: new Audio("src/assets/sounds/gameover.wav"),
+    screaming: new Audio("src/assets/sounds/screaming.m4a"),
+    ringing: new Audio("src/assets/sounds/ringing.wav")
 };
 
 sounds.heartbeat.loop = true;
@@ -12,6 +14,23 @@ sounds.heartbeat.volume = 0.3;
 sounds.knife.volume = 0.8;
 sounds.gunshot.volume = 0.6;
 sounds.gameover.volume = 0.7;
+sounds.screaming.volume = 1;
+sounds.ringing.loop = true;
+sounds.ringing.volume = 0.7;
+
+let soundContext;
+
+function enableScreamBoost() {
+    if (!soundContext) {
+        soundContext = new AudioContext();
+        const source = soundContext.createMediaElementSource(sounds.screaming);
+        const gain = soundContext.createGain();
+        gain.gain.value = 2;
+        source.connect(gain);
+        gain.connect(soundContext.destination);
+    }
+    return soundContext.state === "suspended" ? soundContext.resume() : Promise.resolve();
+}
 
 async function playSound(name) {
     const sound = sounds[name];
@@ -20,22 +39,40 @@ async function playSound(name) {
 
     sound.muted = false;
     sound.currentTime = 0;
-    await sound.play();
+    await Promise.all([enableScreamBoost(), sound.play()]);
 }
 
-const testSoundButton = document.getElementById("testSoundButton");
 const soundStatus = document.getElementById("soundStatus");
 
-testSoundButton.addEventListener("click", async () => {
-    soundStatus.textContent = "Loading knife sound…";
-    try {
-        await playSound("knife");
-        soundStatus.textContent = "Playing knife sound 🔊";
-    } catch (error) {
-        console.error("Sound could not play:", error);
-        soundStatus.textContent = `Could not play knife sound: ${error.message}`;
+function playGameSound(name) {
+    return playSound(name).catch(error => {
+        if (error.name === "AbortError") return;
+        console.error(`Could not play ${name}:`, error);
+        soundStatus.textContent = `Could not play ${name}: ${error.message}`;
+    });
+}
+
+function stopAllSounds() {
+    for (const name of Object.keys(sounds)) {
+        sounds[name].onended = null;
+        stopSound(name);
     }
-});
+}
+
+function playRoundEnding(won) {
+    stopAllSounds();
+    if (!won) {
+        sounds.screaming.onended = () => {
+            sounds.screaming.onended = null;
+            playGameSound("gameover");
+        };
+    }
+    playSound("screaming").catch(error => {
+        if (error.name === "AbortError") return;
+        soundStatus.textContent = `Could not play screaming: ${error.message}`;
+        if (!won) playGameSound("gameover");
+    });
+}
 
 function stopSound(name) {
     const sound = sounds[name];
